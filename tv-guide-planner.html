@@ -1,0 +1,1156 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, viewport-fit=cover">
+<title>Seans — TV Guide Planner &amp; Debate Killer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0A0716;
+  --bg-grad:radial-gradient(circle at 15% -10%, #241a4a 0%, #0A0716 45%), radial-gradient(circle at 100% 10%, #2a1440 0%, transparent 40%);
+  --surface:#150F28;
+  --surface-2:#1D1638;
+  --surface-3:#251C46;
+  --border:rgba(255,255,255,.08);
+  --border-strong:rgba(255,255,255,.14);
+  --text:#F3EFFC;
+  --text-dim:#9B90BE;
+  --text-faint:#6C6390;
+  --accent:#7C5CFF;
+  --accent-soft:rgba(124,92,255,.16);
+  --pink:#FF4FA3;
+  --gold:#FFB020;
+  --cyan:#3ECFFF;
+  --green:#38D9A9;
+  --red:#FF5D6C;
+  --radius:18px;
+  --radius-sm:12px;
+  font-size:16px;
+}
+*{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+html,body{margin:0;padding:0;}
+body{
+  background:var(--bg-grad), var(--bg);
+  color:var(--text);
+  font-family:'Inter',sans-serif;
+  min-height:100vh;
+  overflow-x:hidden;
+}
+::selection{background:var(--accent); color:#fff;}
+h1,h2,h3,h4,.display{font-family:'Space Grotesk',sans-serif;}
+.mono{font-family:'IBM Plex Mono',monospace;}
+button{font-family:inherit;}
+input,select,textarea{font-family:inherit;}
+
+/* ---------- layout shell ---------- */
+#app{display:none; max-width:560px; margin:0 auto; min-height:100vh; position:relative; padding-bottom:96px;}
+#app.ready{display:block;}
+.topbar{
+  position:sticky; top:0; z-index:20;
+  display:flex; align-items:center; justify-content:space-between;
+  padding:18px 20px 14px;
+  background:linear-gradient(180deg, rgba(10,7,22,.95), rgba(10,7,22,.75) 70%, transparent);
+  backdrop-filter:blur(10px);
+}
+.brand{display:flex; align-items:center; gap:10px;}
+.brand .mark{width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,var(--accent),var(--pink)); display:flex;align-items:center;justify-content:center;font-size:18px;box-shadow:0 6px 18px -4px rgba(124,92,255,.6);}
+.brand .name{font-weight:700; font-size:17px; letter-spacing:.2px;}
+.brand .sub{font-size:11px; color:var(--text-faint); margin-top:-2px;}
+.status-dot{width:8px;height:8px;border-radius:50%; background:var(--green); box-shadow:0 0 8px var(--green);}
+.icon-btn{width:38px;height:38px;border-radius:12px;background:var(--surface-2);border:1px solid var(--border); color:var(--text); display:flex;align-items:center;justify-content:center; cursor:pointer; font-size:16px;}
+.icon-btn:active{transform:scale(.94);}
+
+main{padding:0 16px;}
+.view{display:none; animation:fadeIn .25s ease;}
+.view.active{display:block;}
+@keyframes fadeIn{from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:translateY(0);}}
+
+/* ---------- bottom nav ---------- */
+.bottomnav{
+  position:fixed; left:0; right:0; bottom:0; z-index:30;
+  display:flex; justify-content:center;
+  padding:10px 14px calc(10px + env(safe-area-inset-bottom));
+  background:linear-gradient(0deg, rgba(10,7,22,.97) 60%, rgba(10,7,22,.85) 100%);
+  backdrop-filter:blur(14px);
+  border-top:1px solid var(--border);
+}
+.bottomnav-inner{display:flex; align-items:center; gap:4px; width:100%; max-width:520px; justify-content:space-between;}
+.navbtn{flex:1; display:flex; flex-direction:column; align-items:center; gap:3px; background:none; border:none; color:var(--text-faint); padding:6px 2px; cursor:pointer; border-radius:12px;}
+.navbtn .ic{font-size:19px; line-height:1;}
+.navbtn .lb{font-size:10px; font-weight:600; letter-spacing:.2px;}
+.navbtn.active{color:var(--text);}
+.navbtn.active .ic{filter:drop-shadow(0 0 6px rgba(124,92,255,.7));}
+.navbtn.fab{margin-top:-26px;}
+.navbtn.fab .fab-circle{width:52px;height:52px;border-radius:16px; background:linear-gradient(135deg,var(--accent),var(--pink)); display:flex;align-items:center;justify-content:center; font-size:24px; color:#fff; box-shadow:0 10px 24px -6px rgba(124,92,255,.75); border:3px solid var(--bg);}
+.navbtn.fab .lb{color:var(--text-dim);}
+
+/* ---------- setup screen ---------- */
+#setupScreen{min-height:100vh; display:flex; align-items:center; justify-content:center; padding:28px;}
+.setup-card{max-width:420px; width:100%; background:var(--surface); border:1px solid var(--border); border-radius:24px; padding:28px 24px;}
+.setup-card .mark-lg{width:56px;height:56px;border-radius:16px;background:linear-gradient(135deg,var(--accent),var(--pink)); display:flex;align-items:center;justify-content:center;font-size:26px;margin-bottom:16px; box-shadow:0 10px 26px -6px rgba(124,92,255,.6);}
+.setup-card h1{font-size:22px; margin:0 0 6px;}
+.setup-card p{color:var(--text-dim); font-size:13.5px; line-height:1.6; margin:0 0 18px;}
+.setup-card ol{color:var(--text-dim); font-size:13px; line-height:1.9; padding-left:18px; margin:0 0 18px;}
+.setup-card ol code{background:var(--surface-3); padding:1px 6px; border-radius:5px; color:var(--cyan); font-size:12px;}
+label.field-label{display:block; font-size:12px; font-weight:600; color:var(--text-dim); margin:0 0 6px; letter-spacing:.2px;}
+.text-input{width:100%; background:var(--surface-2); border:1px solid var(--border); color:var(--text); border-radius:12px; padding:13px 14px; font-size:14px; outline:none; transition:border-color .15s;}
+.text-input:focus{border-color:var(--accent);}
+.btn{border:none; border-radius:13px; padding:13px 18px; font-weight:700; font-size:14px; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; gap:8px;}
+.btn-primary{background:linear-gradient(135deg,var(--accent),#9B7CFF); color:#fff; width:100%; box-shadow:0 10px 22px -8px rgba(124,92,255,.65);}
+.btn-primary:active{transform:scale(.98);}
+.btn-ghost{background:var(--surface-2); color:var(--text); border:1px solid var(--border);}
+.btn-danger{background:rgba(255,93,108,.14); color:var(--red); border:1px solid rgba(255,93,108,.3);}
+.setup-error{color:var(--red); font-size:12.5px; margin-top:10px; display:none;}
+
+/* ---------- dashboard ---------- */
+.datebar{display:flex; align-items:center; justify-content:space-between; gap:10px; margin:6px 0 18px;}
+.datebar .dbtn{width:40px;height:40px;border-radius:12px;background:var(--surface-2);border:1px solid var(--border);color:var(--text);font-size:16px; cursor:pointer;}
+.date-picker-wrap{flex:1; position:relative; text-align:center;}
+.date-display{background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:11px 12px; cursor:pointer; position:relative;}
+.date-display .dlabel{font-weight:700; font-size:14.5px;}
+.date-display .dsub{font-size:11px; color:var(--text-faint); margin-top:1px;}
+#realDateInput{position:absolute; inset:0; opacity:0; cursor:pointer;}
+.today-chip{font-size:10.5px; color:var(--accent); font-weight:700; cursor:pointer; text-align:center; margin-bottom:10px; letter-spacing:.3px;}
+
+.rail{position:relative; padding-left:52px;}
+.rail::before{content:'';position:absolute; left:20px; top:6px; bottom:6px; width:2px; background:linear-gradient(180deg, var(--accent), var(--surface-3)); opacity:.4; border-radius:2px;}
+.slot{position:relative; margin-bottom:14px;}
+.slot-time{position:absolute; left:-52px; top:2px; width:44px; text-align:right; font-size:12px; color:var(--text-faint); font-weight:600;}
+.slot-dot{position:absolute; left:14px; top:6px; width:13px;height:13px;border-radius:50%; background:var(--surface-3); border:2px solid var(--border-strong); z-index:2;}
+.slot.filled .slot-dot{background:var(--accent); border-color:var(--accent); box-shadow:0 0 10px rgba(124,92,255,.7);}
+
+.card{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:12px; display:flex; gap:12px; cursor:pointer; transition:border-color .15s, transform .1s;}
+.card:active{transform:scale(.985);}
+.card:hover{border-color:var(--border-strong);}
+.poster{width:56px; height:78px; border-radius:10px; object-fit:cover; background:var(--surface-3); flex-shrink:0;}
+.poster.placeholder{display:flex;align-items:center;justify-content:center; font-size:20px; color:var(--text-faint);}
+.card-body{flex:1; min-width:0; display:flex; flex-direction:column; justify-content:center; gap:6px;}
+.card-title{font-weight:700; font-size:14.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+.tagrow{display:flex; flex-wrap:wrap; gap:6px;}
+.tag{font-size:10.5px; font-weight:600; padding:3px 8px; border-radius:8px; background:var(--surface-3); color:var(--text-dim); white-space:nowrap;}
+.tag.genre{background:var(--accent-soft); color:#C9BBFF;}
+.person-chip{display:inline-flex; align-items:center; gap:5px; font-size:11px; font-weight:700; padding:3px 9px 3px 6px; border-radius:20px;}
+.person-dot{width:7px;height:7px;border-radius:50%;}
+
+.slot-empty{border:1.5px dashed var(--border-strong); border-radius:var(--radius); padding:14px; display:flex; align-items:center; justify-content:center; gap:8px; color:var(--text-faint); font-size:13px; font-weight:600; cursor:pointer; background:transparent;}
+.slot-empty:active{background:var(--surface-2);}
+
+.section-title{font-size:12px; font-weight:700; color:var(--text-faint); text-transform:uppercase; letter-spacing:.6px; margin:22px 0 12px 2px;}
+
+/* ---------- forms ---------- */
+.form-wrap{padding-bottom:20px;}
+.field{margin-bottom:16px;}
+.row2{display:grid; grid-template-columns:1fr 1fr; gap:12px;}
+.chip-select{display:flex; gap:8px; flex-wrap:wrap;}
+.chip-opt{border:1.5px solid var(--border); background:var(--surface-2); color:var(--text-dim); border-radius:12px; padding:10px 14px; font-size:13px; font-weight:700; cursor:pointer; display:flex; align-items:center; gap:7px;}
+.chip-opt.active{border-color:transparent; color:#fff;}
+.slot-select{display:grid; grid-template-columns:repeat(3,1fr); gap:8px;}
+.slot-opt{border:1.5px solid var(--border); background:var(--surface-2); color:var(--text-dim); border-radius:11px; padding:9px 6px; font-size:12.5px; font-weight:700; text-align:center; cursor:pointer;}
+.slot-opt.active{border-color:var(--accent); background:var(--accent-soft); color:#fff;}
+.genre-select-wrap{position:relative;}
+select.text-input{appearance:none; -webkit-appearance:none; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='9'%3E%3Cpath d='M1 1l6 6 6-6' stroke='%239B90BE' stroke-width='2' fill='none'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 14px center; padding-right:36px;}
+.new-genre-row{display:flex; gap:8px; margin-top:10px;}
+.link-row{display:flex; gap:8px;}
+.link-row .text-input{flex:1;}
+.btn-fetch{background:var(--surface-3); color:var(--cyan); border:1px solid rgba(62,207,255,.3); border-radius:12px; padding:0 16px; font-weight:700; font-size:12.5px; white-space:nowrap; cursor:pointer;}
+.poster-preview{margin-top:12px; display:flex; align-items:center; gap:12px;}
+.poster-preview img{width:64px;height:90px;border-radius:10px; object-fit:cover; background:var(--surface-3);}
+.poster-preview .pv-text{font-size:12px; color:var(--text-dim);}
+.form-actions{display:flex; gap:10px; margin-top:22px;}
+.form-actions .btn{flex:1;}
+.hint{font-size:11.5px; color:var(--text-faint); margin-top:6px;}
+textarea.text-input{resize:vertical; min-height:64px;}
+
+/* ---------- wishlist ---------- */
+.wish-card{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:12px; display:flex; gap:12px; margin-bottom:12px;}
+.wish-body{flex:1; min-width:0; display:flex; flex-direction:column; gap:6px;}
+.wish-note{font-size:12px; color:var(--text-dim); line-height:1.4;}
+.wish-actions{display:flex; gap:8px; margin-top:4px;}
+.btn-sm{border:none; border-radius:10px; padding:8px 12px; font-size:12px; font-weight:700; cursor:pointer;}
+.btn-move{background:linear-gradient(135deg,var(--accent),#9B7CFF); color:#fff;}
+.btn-del{background:var(--surface-3); color:var(--red);}
+.empty-state{text-align:center; padding:50px 20px; color:var(--text-faint);}
+.empty-state .ic{font-size:38px; margin-bottom:10px;}
+.empty-state .t{font-weight:700; color:var(--text-dim); margin-bottom:4px;}
+.empty-state .s{font-size:12.5px;}
+
+/* ---------- analytics ---------- */
+.toggle-row{display:flex; gap:8px; margin-bottom:18px;}
+.toggle-opt{flex:1; text-align:center; padding:10px; border-radius:12px; background:var(--surface-2); border:1px solid var(--border); font-size:13px; font-weight:700; color:var(--text-dim); cursor:pointer;}
+.toggle-opt.active{background:var(--accent-soft); color:#fff; border-color:var(--accent);}
+.chart-card{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:18px; margin-bottom:16px;}
+.chart-card h3{font-size:14px; margin:0 0 4px;}
+.chart-card .cs{font-size:11.5px; color:var(--text-faint); margin-bottom:14px;}
+.chart-wrap{position:relative; height:210px;}
+.chart-empty{text-align:center; padding:34px 14px; color:var(--text-faint); font-size:12.5px; font-weight:600; line-height:1.6;}
+.debug-line{font-size:11px; color:var(--text-faint); margin:-8px 0 14px 2px; font-family:'IBM Plex Mono',monospace;}
+.donut-wrap{display:flex; justify-content:center; margin-bottom:20px;}
+.donut{width:148px; height:148px; border-radius:50%; position:relative;}
+.donut::after{content:''; position:absolute; inset:24px; background:var(--surface); border-radius:50%;}
+.donut-center{position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; z-index:2;}
+.donut-num{font-size:22px; font-weight:700; font-family:'IBM Plex Mono',monospace;}
+.donut-label{font-size:10px; color:var(--text-faint); margin-top:2px;}
+.lb-name.wide{width:112px;}
+.lb-name{white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+.leaderboard{display:flex; flex-direction:column; gap:10px; margin-top:14px;}
+.lb-row{display:flex; align-items:center; gap:10px;}
+.lb-row .lb-name{width:70px; font-size:12.5px; font-weight:700; flex-shrink:0;}
+.lb-row .lb-bar-track{flex:1; height:8px; background:var(--surface-3); border-radius:5px; overflow:hidden;}
+.lb-row .lb-bar-fill{height:100%; border-radius:5px;}
+.lb-row .lb-num{width:26px; text-align:right; font-size:12px; color:var(--text-dim); font-family:'IBM Plex Mono',monospace;}
+
+/* ---------- settings ---------- */
+.genre-list{display:flex; flex-direction:column; gap:8px;}
+.genre-row{display:flex; align-items:center; justify-content:space-between; background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:11px 14px;}
+.genre-row .gname{font-size:13.5px; font-weight:600;}
+.genre-row .gdel{background:none; border:none; color:var(--text-faint); font-size:15px; cursor:pointer; padding:4px;}
+.add-genre-row{display:flex; gap:8px; margin-top:14px;}
+.settings-block{margin-bottom:26px;}
+
+/* ---------- modal / sheet ---------- */
+.overlay{position:fixed; inset:0; background:rgba(6,4,14,.7); backdrop-filter:blur(3px); z-index:50; display:none; align-items:flex-end; justify-content:center;}
+.overlay.show{display:flex;}
+.sheet{background:var(--bg); width:100%; max-width:560px; max-height:92vh; overflow-y:auto; border-radius:26px 26px 0 0; padding:18px 20px calc(24px + env(safe-area-inset-bottom)); border-top:1px solid var(--border-strong); animation:slideUp .28s cubic-bezier(.2,.9,.2,1);}
+@keyframes slideUp{from{transform:translateY(30px); opacity:0;} to{transform:translateY(0); opacity:1;}}
+.sheet-handle{width:38px; height:4px; background:var(--border-strong); border-radius:3px; margin:0 auto 16px;}
+.sheet-header{display:flex; align-items:center; justify-content:space-between; margin-bottom:18px;}
+.sheet-header h2{font-size:17px; margin:0;}
+.sheet-close{width:32px;height:32px;border-radius:10px; background:var(--surface-2); border:1px solid var(--border); color:var(--text-dim); cursor:pointer;}
+
+.mini-picker{background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:16px; margin-bottom:16px;}
+
+/* mini prompt sheet for move-to-calendar */
+.toast{position:fixed; left:50%; bottom:110px; transform:translateX(-50%); background:var(--surface-3); border:1px solid var(--border-strong); color:var(--text); padding:12px 18px; border-radius:14px; font-size:13px; font-weight:600; z-index:80; opacity:0; pointer-events:none; transition:opacity .25s, transform .25s; box-shadow:0 12px 30px -8px rgba(0,0,0,.6);}
+.toast.show{opacity:1; transform:translateX(-50%) translateY(-6px);}
+.toast.err{border-color:rgba(255,93,108,.4); color:var(--red);}
+
+.spinner{width:16px;height:16px;border-radius:50%; border:2px solid rgba(255,255,255,.25); border-top-color:#fff; animation:spin .7s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.loading-screen{min-height:100vh; display:flex; align-items:center; justify-content:center; flex-direction:column; gap:14px; color:var(--text-dim); font-size:13px;}
+</style>
+</head>
+<body>
+
+<!-- ================= SETUP SCREEN ================= -->
+<div id="setupScreen">
+  <div class="setup-card">
+    <div class="mark-lg">🎬</div>
+    <h1>Seans'a Hoş Geldin</h1>
+    <p>Çiftler arası "ne izlesek" tartışmalarını bitiren, istatistik tutan TV rehberi. Verilerin kendi Google Sheets tablonda saklanır.</p>
+    <ol>
+      <li>Boş bir Google Sheets aç.</li>
+      <li><b>Uzantılar → Apps Script</b> menüsüne gir.</li>
+      <li>Verdiğimiz <code>Code.gs</code> dosyasının içeriğini yapıştır.</li>
+      <li><b>Dağıt → Yeni Dağıtım → Web Uygulaması</b>. "Kim erişebilir": <b>Herkes</b>.</li>
+      <li>Oluşan Web App URL'sini aşağıya yapıştır.</li>
+    </ol>
+    <label class="field-label">Apps Script Web App URL</label>
+    <input class="text-input" id="apiUrlInput" placeholder="https://script.google.com/macros/s/.../exec" autocomplete="off">
+    <div class="setup-error" id="setupError"></div>
+    <div style="height:14px;"></div>
+    <button class="btn btn-primary" id="connectBtn">Bağlan &amp; Başla</button>
+  </div>
+</div>
+
+<!-- ================= APP SHELL ================= -->
+<div id="app">
+  <div class="topbar">
+    <div class="brand">
+      <div class="mark">🎬</div>
+      <div>
+        <div class="name">Seans</div>
+        <div class="sub">Debate Killer</div>
+      </div>
+    </div>
+    <div style="display:flex; align-items:center; gap:10px;">
+      <span class="status-dot" id="statusDot" title="Google Sheets bağlantısı"></span>
+      <button class="icon-btn" id="refreshBtn">⟳</button>
+    </div>
+  </div>
+
+  <main>
+    <!-- DASHBOARD -->
+    <section class="view active" id="view-dashboard">
+      <div class="today-chip" id="todayChip">Bugüne git</div>
+      <div class="datebar">
+        <button class="dbtn" id="prevDay">‹</button>
+        <div class="date-picker-wrap">
+          <div class="date-display" id="dateDisplay">
+            <div class="dlabel" id="dateLabel">—</div>
+            <div class="dsub" id="dateSub">—</div>
+            <input type="date" id="realDateInput">
+          </div>
+        </div>
+        <button class="dbtn" id="nextDay">›</button>
+      </div>
+      <div class="rail" id="scheduleRail"></div>
+    </section>
+
+    <!-- QUICK ADD -->
+    <section class="view" id="view-add">
+      <div class="section-title" style="margin-top:6px;">Hızlı Ekle</div>
+      <div class="form-wrap" id="addFormWrap"></div>
+    </section>
+
+    <!-- WISHLIST -->
+    <section class="view" id="view-wishlist">
+      <div class="topbar-row" style="display:flex; align-items:center; justify-content:space-between; margin:6px 0 16px;">
+        <div class="section-title" style="margin:0;">İstek Listesi</div>
+        <button class="btn btn-primary" style="padding:9px 14px; width:auto;" id="wishAddBtn">+ Ekle</button>
+      </div>
+      <div id="wishlistContainer"></div>
+    </section>
+
+    <!-- ANALYTICS -->
+    <section class="view" id="view-analytics">
+      <div class="section-title" style="margin-top:6px;">Analiz &amp; Adalet</div>
+      <div class="toggle-row">
+        <div class="toggle-opt active" data-range="week">Bu Hafta</div>
+        <div class="toggle-opt" data-range="month">Bu Ay</div>
+        <div class="toggle-opt" data-range="all">Tüm Zamanlar</div>
+      </div>
+      <div class="debug-line" id="analyticsDebug"></div>
+      <div class="chart-card">
+        <h3>Kim Ne Kadar Seçti?</h3>
+        <div class="cs">Tartışmayı bitiren matematiksel kanıt.</div>
+        <div id="personChartArea"></div>
+      </div>
+      <div class="chart-card">
+        <h3>Tür Dağılımı</h3>
+        <div class="cs">Hangi türde ne kadar zaman geçirildi.</div>
+        <div id="genreChartArea"></div>
+      </div>
+    </section>
+
+    <!-- SETTINGS -->
+    <section class="view" id="view-settings">
+      <div class="section-title" style="margin-top:6px;">Tür Yönetimi</div>
+      <div class="genre-list" id="genreListContainer"></div>
+      <div class="add-genre-row">
+        <input class="text-input" id="newGenreInput" placeholder="Yeni tür adı (örn. Cyberpunk)">
+        <button class="btn btn-ghost" id="addGenreBtn" style="width:auto; padding:0 16px;">Ekle</button>
+      </div>
+
+      <div class="settings-block" style="margin-top:32px;">
+        <div class="section-title">Bağlantı</div>
+        <label class="field-label">Apps Script Web App URL</label>
+        <input class="text-input" id="settingsApiUrl">
+        <div style="height:10px;"></div>
+        <button class="btn btn-ghost" id="saveApiUrlBtn" style="width:100%;">Güncelle</button>
+      </div>
+    </section>
+  </main>
+
+  <div class="bottomnav">
+    <div class="bottomnav-inner">
+      <button class="navbtn active" data-view="dashboard"><span class="ic">🏠</span><span class="lb">Akış</span></button>
+      <button class="navbtn" data-view="wishlist"><span class="ic">🌟</span><span class="lb">İstekler</span></button>
+      <button class="navbtn fab" data-view="add"><span class="fab-circle">＋</span><span class="lb">Ekle</span></button>
+      <button class="navbtn" data-view="analytics"><span class="ic">📊</span><span class="lb">Analiz</span></button>
+      <button class="navbtn" data-view="settings"><span class="ic">⚙️</span><span class="lb">Ayarlar</span></button>
+    </div>
+  </div>
+</div>
+
+<!-- DETAIL / EDIT MODAL -->
+<div class="overlay" id="detailOverlay">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-header">
+      <h2>İçerik Detayı</h2>
+      <button class="sheet-close" id="detailClose">✕</button>
+    </div>
+    <div id="detailFormWrap"></div>
+  </div>
+</div>
+
+<!-- MOVE TO CALENDAR MODAL -->
+<div class="overlay" id="moveOverlay">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-header">
+      <h2>Takvime Taşı</h2>
+      <button class="sheet-close" id="moveClose">✕</button>
+    </div>
+    <div id="moveFormWrap"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ================= CONFIG ================= */
+const TIME_SLOTS = ['19:00','20:00','21:00','22:00','23:00','00:00'];
+const PEOPLE = [
+  {name:'Berk', color:'#3ECFFF'},
+  {name:'Treysi', color:'#FF4FA3'},
+  {name:'Sherlock', color:'#FFB020'}
+];
+const PLATFORMS = ['Netflix','Disney+','Amazon Prime Video','HBO Max','Apple TV+','BluTV','Exxen','Gain','MUBI','Sinema','Diğer'];
+const WEEKDAYS_TR = ['Pazar','Pazartesi','Salı','Çarşamba','Perşembe','Cuma','Cumartesi'];
+const MONTHS_TR = ['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'];
+
+let API_URL = localStorage.getItem('tvgp_api_url') || '';
+
+const state = {
+  tvGuide: [],
+  wishlist: [],
+  genres: [],
+  currentDate: toDateStr(new Date()),
+  activeView: 'dashboard',
+  analyticsRange: 'week',
+  addFormPerson: null,
+  addFormGenre: null,
+  addFormPoster: '',
+  detailItem: null,
+  moveItem: null
+};
+
+/* ================= UTIL ================= */
+function toDateStr(d){
+  const y = d.getFullYear(), m = String(d.getMonth()+1).padStart(2,'0'), day = String(d.getDate()).padStart(2,'0');
+  return `${y}-${m}-${day}`;
+}
+function parseDateStr(s){
+  if(!s) return null;
+  const m = String(s).match(/(\d{4})-(\d{2})-(\d{2})/);
+  if(!m) return null;
+  return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+}
+function fmtDateLabel(dateStr){
+  const d = parseDateStr(dateStr);
+  return `${WEEKDAYS_TR[d.getDay()]}, ${d.getDate()} ${MONTHS_TR[d.getMonth()]}`;
+}
+function fmtDateSub(dateStr){
+  const d = parseDateStr(dateStr);
+  return `${d.getFullYear()}`;
+}
+function personColor(name){
+  const p = PEOPLE.find(p => p.name === name);
+  return p ? p.color : '#8B7FB8';
+}
+function escapeHtml(s){
+  return String(s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function showToast(msg, isErr){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.toggle('err', !!isErr);
+  t.classList.add('show');
+  clearTimeout(showToast._t);
+  showToast._t = setTimeout(() => t.classList.remove('show'), 2600);
+}
+function uid(){ return 'id_' + Math.random().toString(36).slice(2,10); }
+
+/* ================= API ================= */
+async function api(action, payload){
+  if(!API_URL) throw new Error('API URL ayarlı değil');
+  const res = await fetch(API_URL, {
+    method: 'POST',
+    headers: {'Content-Type':'text/plain;charset=utf-8'},
+    body: JSON.stringify(Object.assign({action}, payload || {}))
+  });
+  const data = await res.json();
+  if(data && data.success === false) throw new Error(data.error || 'Bilinmeyen hata');
+  return data;
+}
+
+function normalizeTimeStr(s){
+  if(typeof s !== 'string') return s;
+  const m = s.match(/(\d{2}):(\d{2})/);
+  return m ? `${m[1]}:${m[2]}` : s;
+}
+function normalizeDateStr(s){
+  if(typeof s !== 'string') return s;
+  const m = s.match(/(\d{4}-\d{2}-\d{2})/);
+  return m ? m[1] : s;
+}
+
+async function loadAll(){
+  document.getElementById('statusDot').style.background = '#FFB020';
+  try{
+    const data = await api('getAll');
+    state.tvGuide = (data.tvGuide || []).map(i => Object.assign({}, i, {
+      Tarih: normalizeDateStr(i.Tarih),
+      Saat: normalizeTimeStr(i.Saat)
+    }));
+    state.wishlist = data.wishlist || [];
+    state.genres = data.genres || [];
+    document.getElementById('statusDot').style.background = '#38D9A9';
+    renderAll();
+  }catch(err){
+    document.getElementById('statusDot').style.background = '#FF5D6C';
+    showToast('Veri yüklenemedi: ' + err.message, true);
+  }
+}
+
+/* ================= NAV ================= */
+document.querySelectorAll('.navbtn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    if(btn.dataset.view === 'add'){ state.prefillDate = null; state.prefillSlot = null; }
+    switchView(btn.dataset.view);
+  });
+});
+function switchView(view){
+  state.activeView = view;
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.getElementById('view-' + view).classList.add('active');
+  document.querySelectorAll('.navbtn').forEach(b => b.classList.toggle('active', b.dataset.view === view));
+  if(view === 'add') renderAddForm();
+  if(view === 'wishlist') renderWishlist();
+  if(view === 'analytics') renderAnalytics();
+  if(view === 'settings') renderSettings();
+  if(view === 'dashboard') renderDashboard();
+  window.scrollTo(0,0);
+}
+
+/* ================= DASHBOARD ================= */
+document.getElementById('prevDay').addEventListener('click', () => shiftDay(-1));
+document.getElementById('nextDay').addEventListener('click', () => shiftDay(1));
+document.getElementById('todayChip').addEventListener('click', () => { state.currentDate = toDateStr(new Date()); renderDashboard(); });
+document.getElementById('realDateInput').addEventListener('change', e => { if(e.target.value){ state.currentDate = e.target.value; renderDashboard(); } });
+
+function shiftDay(delta){
+  const d = parseDateStr(state.currentDate);
+  d.setDate(d.getDate() + delta);
+  state.currentDate = toDateStr(d);
+  renderDashboard();
+}
+
+function renderDashboard(){
+  document.getElementById('dateLabel').textContent = fmtDateLabel(state.currentDate);
+  document.getElementById('dateSub').textContent = fmtDateSub(state.currentDate);
+  document.getElementById('realDateInput').value = state.currentDate;
+
+  const dayItems = state.tvGuide.filter(t => t.Tarih === state.currentDate);
+  const rail = document.getElementById('scheduleRail');
+  rail.innerHTML = TIME_SLOTS.map(slot => {
+    const item = dayItems.find(i => i.Saat === slot);
+    if(item){
+      return `
+      <div class="slot filled">
+        <div class="slot-time mono">${slot}</div>
+        <div class="slot-dot"></div>
+        <div class="card" data-id="${item.ID}" data-open-detail="tv">
+          ${item.Gorsel_Url ? `<img class="poster" src="${escapeHtml(item.Gorsel_Url)}" onerror="this.outerHTML='<div class=\\'poster placeholder\\'>🎬</div>'">` : `<div class="poster placeholder">🎬</div>`}
+          <div class="card-body">
+            <div class="card-title">${escapeHtml(item.Baslik)}</div>
+            <div class="tagrow">
+              ${item.Platform ? `<span class="tag">${escapeHtml(item.Platform)}</span>` : ''}
+              ${item.Tur ? `<span class="tag genre">${escapeHtml(item.Tur)}</span>` : ''}
+            </div>
+            ${item.Isteyen ? `<span class="person-chip" style="background:${personColor(item.Isteyen)}22; color:${personColor(item.Isteyen)};"><span class="person-dot" style="background:${personColor(item.Isteyen)};"></span>${escapeHtml(item.Isteyen)}</span>` : ''}
+          </div>
+        </div>
+      </div>`;
+    }
+    return `
+      <div class="slot">
+        <div class="slot-time mono">${slot}</div>
+        <div class="slot-dot"></div>
+        <button class="slot-empty" data-empty-slot="${slot}">＋ Bu saate ekle</button>
+      </div>`;
+  }).join('');
+
+  rail.querySelectorAll('[data-open-detail]').forEach(el => {
+    el.addEventListener('click', () => openDetail(el.dataset.id));
+  });
+  rail.querySelectorAll('[data-empty-slot]').forEach(el => {
+    el.addEventListener('click', () => {
+      state.prefillDate = state.currentDate;
+      state.prefillSlot = el.dataset.emptySlot;
+      switchView('add');
+    });
+  });
+}
+
+/* ================= ADD FORM (shared builder) ================= */
+function buildFormHtml(opts){
+  // opts: {mode: 'tv'|'wishlist', values: {...}}
+  const v = opts.values || {};
+  const mode = opts.mode;
+  const genreOptions = state.genres.map(g => `<option value="${escapeHtml(g)}" ${v.Tur===g?'selected':''}>${escapeHtml(g)}</option>`).join('');
+
+  return `
+    ${mode === 'tv' ? `
+    <div class="field">
+      <label class="field-label">Tarih</label>
+      <input class="text-input" type="date" data-f="Tarih" value="${v.Tarih || ''}">
+    </div>
+    <div class="field">
+      <label class="field-label">Saat Dilimi</label>
+      <div class="slot-select" data-f="Saat" data-value="${v.Saat || ''}">
+        ${TIME_SLOTS.map(s => `<div class="slot-opt ${v.Saat===s?'active':''}" data-slot="${s}">${s}</div>`).join('')}
+      </div>
+    </div>` : ''}
+
+    <div class="field">
+      <label class="field-label">İçerik Adı</label>
+      <input class="text-input" data-f="Baslik" placeholder="Örn. Dune: Part Two" value="${escapeHtml(v.Baslik||'')}">
+    </div>
+
+    <div class="field">
+      <label class="field-label">Platform</label>
+      <input class="text-input" list="platformList" data-f="Platform" placeholder="Netflix, Disney+..." value="${escapeHtml(v.Platform||'')}">
+      <datalist id="platformList">${PLATFORMS.map(p=>`<option value="${p}">`).join('')}</datalist>
+    </div>
+
+    <div class="field">
+      <label class="field-label">IMDb / Platform Linki</label>
+      <div class="link-row">
+        <input class="text-input" data-f="Link" placeholder="https://..." value="${escapeHtml(v.Link||'')}">
+        <button type="button" class="btn-fetch" data-fetch-poster>Afişi Çek</button>
+      </div>
+      <div class="hint">Linkten otomatik afiş (og:image) çekilir. Gerekirse aşağıdan manuel düzenle.</div>
+      <div class="poster-preview" data-poster-preview style="${v.Gorsel_Url ? '' : 'display:none;'}">
+        <img src="${escapeHtml(v.Gorsel_Url||'')}" data-poster-img>
+        <div class="pv-text">Afiş bulundu ✓</div>
+      </div>
+      <input type="hidden" data-f="Gorsel_Url" value="${escapeHtml(v.Gorsel_Url||'')}">
+    </div>
+
+    <div class="field">
+      <label class="field-label">İsteyen Kişi</label>
+      <div class="chip-select" data-f="Isteyen" data-value="${v.Isteyen || ''}">
+        ${PEOPLE.map(p => `<div class="chip-opt ${v.Isteyen===p.name?'active':''}" data-person="${p.name}" style="${v.Isteyen===p.name?`background:${p.color}; border-color:${p.color};`:''}">${p.name}</div>`).join('')}
+      </div>
+    </div>
+
+    <div class="field">
+      <label class="field-label">Tür</label>
+      <div class="genre-select-wrap">
+        <select class="text-input" data-f="Tur" data-genre-select>
+          <option value="">Tür seç...</option>
+          ${genreOptions}
+          <option value="__add__">➕ Tür Ekle...</option>
+        </select>
+      </div>
+      <div class="new-genre-row" data-new-genre-row style="display:none;">
+        <input class="text-input" placeholder="Yeni tür adı" data-new-genre-input>
+        <button type="button" class="btn btn-ghost" style="width:auto; padding:0 16px;" data-new-genre-add>Ekle</button>
+      </div>
+    </div>
+
+    ${mode === 'wishlist' ? `
+    <div class="field">
+      <label class="field-label">Hedef Notu (opsiyonel)</label>
+      <textarea class="text-input" data-f="Hedef_Notu" placeholder="Örn. Yağmurlu bir gece için ideal">${escapeHtml(v.Hedef_Notu||'')}</textarea>
+    </div>` : ''}
+  `;
+}
+
+function wireFormEvents(container, opts){
+  // slot select
+  container.querySelectorAll('[data-slot]').forEach(el => {
+    el.addEventListener('click', () => {
+      container.querySelectorAll('[data-slot]').forEach(o => o.classList.remove('active'));
+      el.classList.add('active');
+      el.parentElement.dataset.value = el.dataset.slot;
+    });
+  });
+  // person chip
+  container.querySelectorAll('[data-person]').forEach(el => {
+    el.addEventListener('click', () => {
+      container.querySelectorAll('[data-person]').forEach(o => { o.classList.remove('active'); o.style.background=''; o.style.borderColor=''; });
+      el.classList.add('active');
+      const p = PEOPLE.find(p=>p.name===el.dataset.person);
+      el.style.background = p.color; el.style.borderColor = p.color;
+      el.parentElement.dataset.value = el.dataset.person;
+    });
+  });
+  // genre select -> add new
+  const genreSelect = container.querySelector('[data-genre-select]');
+  const newGenreRow = container.querySelector('[data-new-genre-row]');
+  if(genreSelect){
+    genreSelect.addEventListener('change', () => {
+      if(genreSelect.value === '__add__'){
+        newGenreRow.style.display = 'flex';
+      } else {
+        newGenreRow.style.display = 'none';
+      }
+    });
+  }
+  const addGenreBtn = container.querySelector('[data-new-genre-add]');
+  if(addGenreBtn){
+    addGenreBtn.addEventListener('click', async () => {
+      const input = container.querySelector('[data-new-genre-input]');
+      const name = input.value.trim();
+      if(!name) return;
+      addGenreBtn.disabled = true;
+      try{
+        await api('addGenre', {Tur: name});
+        if(!state.genres.includes(name)) state.genres.push(name);
+        const opt = document.createElement('option');
+        opt.value = name; opt.textContent = name;
+        genreSelect.insertBefore(opt, genreSelect.querySelector('option[value="__add__"]'));
+        genreSelect.value = name;
+        newGenreRow.style.display = 'none';
+        input.value = '';
+        showToast('Tür eklendi: ' + name);
+      }catch(err){
+        showToast('Tür eklenemedi: ' + err.message, true);
+      }
+      addGenreBtn.disabled = false;
+    });
+  }
+  // fetch poster
+  const fetchBtn = container.querySelector('[data-fetch-poster]');
+  if(fetchBtn){
+    fetchBtn.addEventListener('click', async () => {
+      const linkInput = container.querySelector('[data-f="Link"]');
+      const url = linkInput.value.trim();
+      if(!url){ showToast('Önce bir link gir', true); return; }
+      const origText = fetchBtn.textContent;
+      fetchBtn.innerHTML = '<span class="spinner"></span>';
+      try{
+        const res = await api('fetchOgImage', {url});
+        const hidden = container.querySelector('[data-f="Gorsel_Url"]');
+        const preview = container.querySelector('[data-poster-preview]');
+        const img = container.querySelector('[data-poster-img]');
+        if(res.success && res.image){
+          hidden.value = res.image;
+          img.src = res.image;
+          preview.style.display = 'flex';
+          showToast('Afiş bulundu ✓');
+        } else {
+          showToast('Afiş bulunamadı, manuel görsel linki ekleyebilirsin', true);
+        }
+      }catch(err){
+        showToast('Afiş çekilemedi: ' + err.message, true);
+      }
+      fetchBtn.textContent = origText;
+    });
+  }
+}
+
+function readFormValues(container, mode){
+  const values = {};
+  container.querySelectorAll('[data-f]').forEach(el => {
+    const key = el.dataset.f;
+    if(el.classList.contains('slot-select') || el.classList.contains('chip-select')){
+      values[key] = el.dataset.value || '';
+    } else {
+      values[key] = el.value;
+    }
+  });
+  // slot-select / chip-select containers use data-f on wrapper div, handled above by querySelectorAll matching divs too
+  if(values.Tur === '__add__') values.Tur = '';
+  return values;
+}
+
+function renderAddForm(){
+  const wrap = document.getElementById('addFormWrap');
+  const values = {};
+  if(state.prefillDate) values.Tarih = state.prefillDate;
+  if(state.prefillSlot) values.Saat = state.prefillSlot;
+  if(!values.Tarih) values.Tarih = state.currentDate;
+
+  wrap.innerHTML = buildFormHtml({mode:'tv', values}) + `
+    <div class="form-actions">
+      <button class="btn btn-primary" id="submitAddBtn">Takvime Ekle</button>
+    </div>
+  `;
+  wireFormEvents(wrap, {mode:'tv'});
+
+  document.getElementById('submitAddBtn').addEventListener('click', async () => {
+    const vals = readFormValues(wrap, 'tv');
+    if(!vals.Tarih || !vals.Saat || !vals.Baslik){
+      showToast('Tarih, saat ve içerik adı zorunlu', true);
+      return;
+    }
+    if(!vals.Isteyen){
+      showToast('Kimin istediğini seç — analiz sayfası buna göre hesaplanıyor', true);
+      return;
+    }
+    const btn = document.getElementById('submitAddBtn');
+    btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>';
+    try{
+      const res = await api('addTV', vals);
+      state.tvGuide.push(Object.assign({ID: res.id}, vals));
+      showToast('Takvime eklendi ✓');
+      state.currentDate = vals.Tarih;
+      state.prefillDate = null; state.prefillSlot = null;
+      switchView('dashboard');
+    }catch(err){
+      showToast('Eklenemedi: ' + err.message, true);
+      btn.disabled = false; btn.textContent = 'Takvime Ekle';
+    }
+  });
+}
+
+/* ================= DETAIL / EDIT MODAL ================= */
+function openDetail(id){
+  const item = state.tvGuide.find(t => t.ID === id);
+  if(!item) return;
+  state.detailItem = item;
+  const wrap = document.getElementById('detailFormWrap');
+  wrap.innerHTML = buildFormHtml({mode:'tv', values:item}) + `
+    <div class="form-actions">
+      <button class="btn btn-danger" id="deleteDetailBtn">Sil</button>
+      <button class="btn btn-primary" id="saveDetailBtn">Kaydet</button>
+    </div>
+  `;
+  wireFormEvents(wrap, {mode:'tv'});
+  document.getElementById('detailOverlay').classList.add('show');
+
+  document.getElementById('saveDetailBtn').addEventListener('click', async () => {
+    const vals = readFormValues(wrap, 'tv');
+    vals.ID = item.ID;
+    const btn = document.getElementById('saveDetailBtn');
+    btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>';
+    try{
+      await api('updateTV', vals);
+      Object.assign(item, vals);
+      showToast('Güncellendi ✓');
+      closeOverlay('detailOverlay');
+      renderDashboard();
+    }catch(err){
+      showToast('Güncellenemedi: ' + err.message, true);
+      btn.disabled = false; btn.textContent = 'Kaydet';
+    }
+  });
+  document.getElementById('deleteDetailBtn').addEventListener('click', async () => {
+    if(!confirm('Bu içeriği silmek istediğine emin misin?')) return;
+    try{
+      await api('deleteTV', {ID: item.ID});
+      state.tvGuide = state.tvGuide.filter(t => t.ID !== item.ID);
+      showToast('Silindi');
+      closeOverlay('detailOverlay');
+      renderDashboard();
+    }catch(err){
+      showToast('Silinemedi: ' + err.message, true);
+    }
+  });
+}
+document.getElementById('detailClose').addEventListener('click', () => closeOverlay('detailOverlay'));
+document.getElementById('detailOverlay').addEventListener('click', e => { if(e.target.id === 'detailOverlay') closeOverlay('detailOverlay'); });
+function closeOverlay(id){ document.getElementById(id).classList.remove('show'); }
+
+/* ================= WISHLIST ================= */
+document.getElementById('wishAddBtn').addEventListener('click', openWishlistAdd);
+
+function renderWishlist(){
+  const container = document.getElementById('wishlistContainer');
+  if(!state.wishlist.length){
+    container.innerHTML = `<div class="empty-state"><div class="ic">🌟</div><div class="t">İstek listesi boş</div><div class="s">Aklınıza gelen filmleri buraya ekleyin, sırası gelince takvime taşıyın.</div></div>`;
+    return;
+  }
+  container.innerHTML = state.wishlist.map(w => `
+    <div class="wish-card">
+      ${w.Gorsel_Url ? `<img class="poster" src="${escapeHtml(w.Gorsel_Url)}" onerror="this.outerHTML='<div class=\\'poster placeholder\\'>🎬</div>'">` : `<div class="poster placeholder">🎬</div>`}
+      <div class="wish-body">
+        <div class="card-title">${escapeHtml(w.Baslik)}</div>
+        <div class="tagrow">
+          ${w.Platform ? `<span class="tag">${escapeHtml(w.Platform)}</span>` : ''}
+          ${w.Tur ? `<span class="tag genre">${escapeHtml(w.Tur)}</span>` : ''}
+          ${w.Isteyen ? `<span class="person-chip" style="background:${personColor(w.Isteyen)}22; color:${personColor(w.Isteyen)};"><span class="person-dot" style="background:${personColor(w.Isteyen)};"></span>${escapeHtml(w.Isteyen)}</span>` : ''}
+        </div>
+        ${w.Hedef_Notu ? `<div class="wish-note">"${escapeHtml(w.Hedef_Notu)}"</div>` : ''}
+        <div class="wish-actions">
+          <button class="btn-sm btn-move" data-move="${w.ID}">📅 Takvime Taşı</button>
+          <button class="btn-sm btn-del" data-delwish="${w.ID}">Sil</button>
+        </div>
+      </div>
+    </div>
+  `).join('');
+
+  container.querySelectorAll('[data-move]').forEach(el => el.addEventListener('click', () => openMoveModal(el.dataset.move)));
+  container.querySelectorAll('[data-delwish]').forEach(el => el.addEventListener('click', async () => {
+    if(!confirm('İstek listesinden silinsin mi?')) return;
+    try{
+      await api('deleteWishlist', {ID: el.dataset.delwish});
+      state.wishlist = state.wishlist.filter(w => w.ID !== el.dataset.delwish);
+      showToast('Silindi');
+      renderWishlist();
+    }catch(err){ showToast('Silinemedi: ' + err.message, true); }
+  }));
+}
+
+function openWishlistAdd(){
+  const wrap = document.getElementById('detailFormWrap');
+  wrap.innerHTML = buildFormHtml({mode:'wishlist', values:{}}) + `
+    <div class="form-actions">
+      <button class="btn btn-primary" id="submitWishBtn">İstek Listesine Ekle</button>
+    </div>
+  `;
+  document.getElementById('detailOverlay').querySelector('h2').textContent = 'İstek Listesine Ekle';
+  wireFormEvents(wrap, {mode:'wishlist'});
+  document.getElementById('detailOverlay').classList.add('show');
+
+  document.getElementById('submitWishBtn').addEventListener('click', async () => {
+    const vals = readFormValues(wrap, 'wishlist');
+    if(!vals.Baslik){ showToast('İçerik adı zorunlu', true); return; }
+    if(!vals.Isteyen){ showToast('Kimin istediğini seç — analiz sayfası buna göre hesaplanıyor', true); return; }
+    const btn = document.getElementById('submitWishBtn');
+    btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>';
+    try{
+      const res = await api('addWishlist', vals);
+      state.wishlist.push(Object.assign({ID: res.id}, vals));
+      showToast('İstek listesine eklendi ✓');
+      closeOverlay('detailOverlay');
+      document.getElementById('detailOverlay').querySelector('h2').textContent = 'İçerik Detayı';
+      renderWishlist();
+    }catch(err){
+      showToast('Eklenemedi: ' + err.message, true);
+      btn.disabled = false; btn.textContent = 'İstek Listesine Ekle';
+    }
+  });
+}
+
+function openMoveModal(id){
+  const item = state.wishlist.find(w => w.ID === id);
+  if(!item) return;
+  state.moveItem = item;
+  const wrap = document.getElementById('moveFormWrap');
+  wrap.innerHTML = `
+    <div class="mini-picker">
+      <div class="card-title" style="margin-bottom:12px;">${escapeHtml(item.Baslik)}</div>
+      <div class="field">
+        <label class="field-label">Tarih</label>
+        <input class="text-input" type="date" id="moveDate" value="${toDateStr(new Date())}">
+      </div>
+      <div class="field" style="margin-bottom:0;">
+        <label class="field-label">Saat Dilimi</label>
+        <div class="slot-select" id="moveSlotSelect">
+          ${TIME_SLOTS.map((s,i) => `<div class="slot-opt ${i===0?'active':''}" data-slot="${s}">${s}</div>`).join('')}
+        </div>
+      </div>
+    </div>
+    <button class="btn btn-primary" id="confirmMoveBtn">Takvime Yerleştir</button>
+  `;
+  let selectedSlot = TIME_SLOTS[0];
+  wrap.querySelectorAll('[data-slot]').forEach(el => {
+    el.addEventListener('click', () => {
+      wrap.querySelectorAll('[data-slot]').forEach(o=>o.classList.remove('active'));
+      el.classList.add('active');
+      selectedSlot = el.dataset.slot;
+    });
+  });
+  document.getElementById('moveOverlay').classList.add('show');
+  document.getElementById('confirmMoveBtn').addEventListener('click', async () => {
+    const date = document.getElementById('moveDate').value;
+    if(!date){ showToast('Tarih seç', true); return; }
+    const btn = document.getElementById('confirmMoveBtn');
+    btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>';
+    try{
+      const res = await api('moveToCalendar', {ID: item.ID, Tarih: date, Saat: selectedSlot});
+      state.wishlist = state.wishlist.filter(w => w.ID !== item.ID);
+      state.tvGuide.push({ID: res.id, Tarih: date, Saat: selectedSlot, Baslik: item.Baslik, Tur: item.Tur, Platform: item.Platform, Isteyen: item.Isteyen, Gorsel_Url: item.Gorsel_Url, Link: item.Link});
+      showToast('Takvime taşındı ✓');
+      closeOverlay('moveOverlay');
+      state.currentDate = date;
+      renderWishlist();
+      renderDashboard();
+    }catch(err){
+      showToast('Taşınamadı: ' + err.message, true);
+      btn.disabled = false; btn.textContent = 'Takvime Yerleştir';
+    }
+  });
+}
+document.getElementById('moveClose').addEventListener('click', () => closeOverlay('moveOverlay'));
+document.getElementById('moveOverlay').addEventListener('click', e => { if(e.target.id === 'moveOverlay') closeOverlay('moveOverlay'); });
+
+/* ================= ANALYTICS ================= */
+document.querySelectorAll('.toggle-opt').forEach(el => {
+  el.addEventListener('click', () => {
+    document.querySelectorAll('.toggle-opt').forEach(o=>o.classList.remove('active'));
+    el.classList.add('active');
+    state.analyticsRange = el.dataset.range;
+    renderAnalytics();
+  });
+});
+
+function itemsInRange(range){
+  const now = new Date();
+  return state.tvGuide.filter(item => {
+    const d = parseDateStr(item.Tarih);
+    if(!d){
+      console.warn('[Analiz] Bu içeriğin Tarih alanı ayrıştırılamadı, hesaba katılmadı:', item.Baslik, '→ Tarih değeri:', JSON.stringify(item.Tarih));
+      return false;
+    }
+    if(range === 'all') return true;
+    if(range === 'month') return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
+    if(range === 'week'){
+      const start = new Date(now); start.setDate(now.getDate() - now.getDay()); start.setHours(0,0,0,0);
+      const end = new Date(start); end.setDate(start.getDate() + 7);
+      return d >= start && d < end;
+    }
+    return true;
+  });
+}
+
+// Builds a CSS conic-gradient string for a donut chart from raw counts + colors.
+// No external chart library involved — pure CSS, so nothing can fail to load.
+function buildConicGradient(counts, colors){
+  const total = counts.reduce((a,b)=>a+b,0);
+  if(total === 0) return 'var(--surface-3)';
+  let acc = 0;
+  const stops = [];
+  counts.forEach((c,i) => {
+    if(c <= 0) return;
+    const start = (acc/total)*360;
+    acc += c;
+    const end = (acc/total)*360;
+    stops.push(`${colors[i]} ${start}deg ${end}deg`);
+  });
+  return `conic-gradient(${stops.join(', ')})`;
+}
+
+function renderAnalytics(){
+  const items = itemsInRange(state.analyticsRange);
+  const withPerson = items.filter(i => i.Isteyen).length;
+  const withGenre = items.filter(i => i.Tur).length;
+  document.getElementById('analyticsDebug').textContent =
+    `Toplam ${state.tvGuide.length} içerik yüklü · bu aralıkta ${items.length} içerik · ${withPerson} tanesinde İsteyen, ${withGenre} tanesinde Tür bilgisi var`;
+
+  // ---- Person distribution (donut + leaderboard) ----
+  const personCounts = PEOPLE.map(p => items.filter(i => i.Isteyen === p.name).length);
+  const rawPersonTotal = personCounts.reduce((a,b)=>a+b,0);
+  const personArea = document.getElementById('personChartArea');
+
+  if(rawPersonTotal === 0){
+    personArea.innerHTML = `<div class="chart-empty">Bu aralıkta "İsteyen" bilgisi girilmiş içerik yok.</div>`;
+  } else {
+    const gradient = buildConicGradient(personCounts, PEOPLE.map(p=>p.color));
+    const rows = PEOPLE.map((p,i) => {
+      const pct = Math.round((personCounts[i]/rawPersonTotal)*100);
+      return `
+        <div class="lb-row">
+          <div class="lb-name" style="color:${p.color};">${p.name}</div>
+          <div class="lb-bar-track"><div class="lb-bar-fill" style="width:${pct}%; background:${p.color};"></div></div>
+          <div class="lb-num mono">${personCounts[i]}</div>
+        </div>`;
+    }).join('');
+    personArea.innerHTML = `
+      <div class="donut-wrap">
+        <div class="donut" style="background:${gradient};">
+          <div class="donut-center">
+            <div class="donut-num">${rawPersonTotal}</div>
+            <div class="donut-label">içerik</div>
+          </div>
+        </div>
+      </div>
+      <div class="leaderboard">${rows}</div>
+    `;
+  }
+
+  // ---- Genre distribution (horizontal bars) ----
+  const genreMap = {};
+  items.forEach(i => { if(i.Tur){ genreMap[i.Tur] = (genreMap[i.Tur]||0) + 1; } });
+  const genreLabels = Object.keys(genreMap).sort((a,b) => genreMap[b] - genreMap[a]);
+  const genreArea = document.getElementById('genreChartArea');
+  const palette = ['#7C5CFF','#FF4FA3','#3ECFFF','#FFB020','#38D9A9','#FF5D6C','#B98CFF','#5CE1E6'];
+
+  if(genreLabels.length === 0){
+    genreArea.innerHTML = `<div class="chart-empty">Bu aralıkta "Tür" bilgisi girilmiş içerik yok.</div>`;
+  } else {
+    const maxVal = Math.max(...genreLabels.map(g => genreMap[g]));
+    const rows = genreLabels.map((g,i) => {
+      const val = genreMap[g];
+      const pct = Math.round((val/maxVal)*100);
+      const color = palette[i % palette.length];
+      return `
+        <div class="lb-row">
+          <div class="lb-name wide" style="color:${color};" title="${escapeHtml(g)}">${escapeHtml(g)}</div>
+          <div class="lb-bar-track"><div class="lb-bar-fill" style="width:${pct}%; background:${color};"></div></div>
+          <div class="lb-num mono">${val}</div>
+        </div>`;
+    }).join('');
+    genreArea.innerHTML = `<div class="leaderboard">${rows}</div>`;
+  }
+}
+
+/* ================= SETTINGS ================= */
+function renderSettings(){
+  const container = document.getElementById('genreListContainer');
+  if(!state.genres.length){
+    container.innerHTML = `<div class="empty-state"><div class="ic">🏷️</div><div class="t">Henüz tür yok</div></div>`;
+  } else {
+    container.innerHTML = state.genres.map(g => `
+      <div class="genre-row">
+        <span class="gname">${escapeHtml(g)}</span>
+        <button class="gdel" data-delgenre="${escapeHtml(g)}">✕</button>
+      </div>
+    `).join('');
+    container.querySelectorAll('[data-delgenre]').forEach(el => el.addEventListener('click', async () => {
+      if(!confirm(`"${el.dataset.delgenre}" türünü silmek istiyor musun?`)) return;
+      try{
+        await api('deleteGenre', {Tur: el.dataset.delgenre});
+        state.genres = state.genres.filter(g => g !== el.dataset.delgenre);
+        renderSettings();
+        showToast('Tür silindi');
+      }catch(err){ showToast('Silinemedi: ' + err.message, true); }
+    }));
+  }
+  document.getElementById('settingsApiUrl').value = API_URL;
+}
+
+document.getElementById('addGenreBtn').addEventListener('click', async () => {
+  const input = document.getElementById('newGenreInput');
+  const name = input.value.trim();
+  if(!name) return;
+  try{
+    await api('addGenre', {Tur: name});
+    if(!state.genres.includes(name)) state.genres.push(name);
+    input.value = '';
+    renderSettings();
+    showToast('Tür eklendi: ' + name);
+  }catch(err){ showToast('Eklenemedi: ' + err.message, true); }
+});
+
+document.getElementById('saveApiUrlBtn').addEventListener('click', () => {
+  const val = document.getElementById('settingsApiUrl').value.trim();
+  if(!val) return;
+  API_URL = val;
+  localStorage.setItem('tvgp_api_url', val);
+  showToast('Bağlantı güncellendi, veriler yenileniyor...');
+  loadAll();
+});
+
+document.getElementById('refreshBtn').addEventListener('click', loadAll);
+
+/* ================= SETUP FLOW ================= */
+document.getElementById('connectBtn').addEventListener('click', async () => {
+  const val = document.getElementById('apiUrlInput').value.trim();
+  const errEl = document.getElementById('setupError');
+  errEl.style.display = 'none';
+  if(!val){ errEl.textContent = 'Lütfen bir URL gir.'; errEl.style.display='block'; return; }
+  const btn = document.getElementById('connectBtn');
+  btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>';
+  API_URL = val;
+  try{
+    const data = await api('getAll');
+    localStorage.setItem('tvgp_api_url', val);
+    state.tvGuide = data.tvGuide || [];
+    state.wishlist = data.wishlist || [];
+    state.genres = data.genres || [];
+    document.getElementById('setupScreen').style.display = 'none';
+    document.getElementById('app').classList.add('ready');
+    renderAll();
+  }catch(err){
+    errEl.textContent = 'Bağlanılamadı: ' + err.message + ' — URL doğru mu ve dağıtım "Herkes" erişimine açık mı kontrol et.';
+    errEl.style.display = 'block';
+    btn.disabled = false; btn.textContent = 'Bağlan & Başla';
+  }
+});
+
+/* ================= INIT ================= */
+function renderAll(){
+  renderDashboard();
+  if(state.activeView === 'wishlist') renderWishlist();
+  if(state.activeView === 'analytics') renderAnalytics();
+  if(state.activeView === 'settings') renderSettings();
+}
+
+(async function init(){
+  if(API_URL){
+    document.getElementById('setupScreen').style.display = 'none';
+    document.getElementById('app').classList.add('ready');
+    await loadAll();
+  }
+})();
+</script>
+</body>
+</html>

@@ -4,6 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, viewport-fit=cover">
 <title>Seans — TV Guide Planner &amp; Debate Killer</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0A0716">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Seans">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
 <style>
@@ -146,9 +153,10 @@ label.field-label{display:block; font-size:12px; font-weight:600; color:var(--te
 .chip-select{display:flex; gap:8px; flex-wrap:wrap;}
 .chip-opt{border:1.5px solid var(--border); background:var(--surface-2); color:var(--text-dim); border-radius:12px; padding:10px 14px; font-size:13px; font-weight:700; cursor:pointer; display:flex; align-items:center; gap:7px;}
 .chip-opt.active{border-color:transparent; color:#fff;}
-.slot-select{display:grid; grid-template-columns:repeat(3,1fr); gap:8px;}
+.slot-select{display:grid; grid-template-columns:repeat(4,1fr); gap:8px;}
 .slot-opt{border:1.5px solid var(--border); background:var(--surface-2); color:var(--text-dim); border-radius:11px; padding:9px 6px; font-size:12.5px; font-weight:700; text-align:center; cursor:pointer;}
 .slot-opt.active{border-color:var(--accent); background:var(--accent-soft); color:#fff;}
+.slot-opt.disabled{opacity:.35; cursor:not-allowed; text-decoration:line-through; background:var(--surface-3); pointer-events:none;}
 .genre-select-wrap{position:relative;}
 select.text-input{appearance:none; -webkit-appearance:none; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='9'%3E%3Cpath d='M1 1l6 6 6-6' stroke='%239B90BE' stroke-width='2' fill='none'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 14px center; padding-right:36px;}
 .new-genre-row{display:flex; gap:8px; margin-top:10px;}
@@ -180,6 +188,9 @@ textarea.text-input{resize:vertical; min-height:64px;}
 .toggle-row{display:flex; gap:8px; margin-bottom:18px;}
 .toggle-opt{flex:1; text-align:center; padding:10px; border-radius:12px; background:var(--surface-2); border:1px solid var(--border); font-size:13px; font-weight:700; color:var(--text-dim); cursor:pointer;}
 .toggle-opt.active{background:var(--accent-soft); color:#fff; border-color:var(--accent);}
+.period-nav{display:flex; align-items:center; gap:10px; margin-bottom:14px;}
+.period-nav .period-label{flex:1; text-align:center; font-weight:700; font-size:13px; background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:10px 8px;}
+.period-nav .dbtn:disabled{opacity:.3; cursor:not-allowed;}
 .chart-card{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:18px; margin-bottom:16px;}
 .chart-card h3{font-size:14px; margin:0 0 4px;}
 .chart-card .cs{font-size:11.5px; color:var(--text-faint); margin-bottom:14px;}
@@ -311,6 +322,11 @@ textarea.text-input{resize:vertical; min-height:64px;}
         <div class="toggle-opt" data-range="month">Bu Ay</div>
         <div class="toggle-opt" data-range="all">Tüm Zamanlar</div>
       </div>
+      <div class="period-nav" id="periodNav" style="display:none;">
+        <button class="dbtn" id="periodPrev">‹</button>
+        <div class="period-label" id="periodLabel">—</div>
+        <button class="dbtn" id="periodNext">›</button>
+      </div>
       <div class="debug-line" id="analyticsDebug"></div>
       <div class="chart-card">
         <h3>Kim Ne Kadar Seçti?</h3>
@@ -382,7 +398,7 @@ textarea.text-input{resize:vertical; min-height:64px;}
 
 <script>
 /* ================= CONFIG ================= */
-const TIME_SLOTS = ['19:00','20:00','21:00','22:00','23:00','00:00'];
+const TIME_SLOTS = ['12:00','13:00','14:00','15:00','16:00','17:00','18:00','19:00','20:00','21:00','22:00','23:00','00:00'];
 const PEOPLE = [
   {name:'Berk', color:'#3ECFFF'},
   {name:'Treysi', color:'#FF4FA3'},
@@ -401,6 +417,8 @@ const state = {
   currentDate: toDateStr(new Date()),
   activeView: 'dashboard',
   analyticsRange: 'week',
+  analyticsWeekOffset: 0,
+  analyticsMonthOffset: 0,
   addFormPerson: null,
   addFormGenre: null,
   addFormPoster: '',
@@ -430,6 +448,19 @@ function fmtDateSub(dateStr){
 function personColor(name){
   const p = PEOPLE.find(p => p.name === name);
   return p ? p.color : '#8B7FB8';
+}
+function getTakenSlots(dateStr, excludeId){
+  if(!dateStr) return [];
+  return state.tvGuide.filter(t => t.Tarih === dateStr && t.ID !== excludeId).map(t => t.Saat);
+}
+function sortedGenres(){
+  return [...state.genres].sort((a,b) => a.localeCompare(b, 'tr'));
+}
+function rebuildGenreSelect(selectEl, selectedValue){
+  const sorted = sortedGenres();
+  selectEl.innerHTML = `<option value="">Tür seç...</option>` +
+    sorted.map(g => `<option value="${escapeHtml(g)}" ${g===selectedValue?'selected':''}>${escapeHtml(g)}</option>`).join('') +
+    `<option value="__add__">➕ Tür Ekle...</option>`;
 }
 function escapeHtml(s){
   return String(s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -568,10 +599,11 @@ function renderDashboard(){
 
 /* ================= ADD FORM (shared builder) ================= */
 function buildFormHtml(opts){
-  // opts: {mode: 'tv'|'wishlist', values: {...}}
+  // opts: {mode: 'tv'|'wishlist', values: {...}, excludeId: string (edit mode, don't block item's own slot)}
   const v = opts.values || {};
   const mode = opts.mode;
-  const genreOptions = state.genres.map(g => `<option value="${escapeHtml(g)}" ${v.Tur===g?'selected':''}>${escapeHtml(g)}</option>`).join('');
+  const genreOptions = sortedGenres().map(g => `<option value="${escapeHtml(g)}" ${v.Tur===g?'selected':''}>${escapeHtml(g)}</option>`).join('');
+  const takenSlots = mode === 'tv' ? getTakenSlots(v.Tarih, opts.excludeId) : [];
 
   return `
     ${mode === 'tv' ? `
@@ -582,8 +614,12 @@ function buildFormHtml(opts){
     <div class="field">
       <label class="field-label">Saat Dilimi</label>
       <div class="slot-select" data-f="Saat" data-value="${v.Saat || ''}">
-        ${TIME_SLOTS.map(s => `<div class="slot-opt ${v.Saat===s?'active':''}" data-slot="${s}">${s}</div>`).join('')}
+        ${TIME_SLOTS.map(s => {
+          const taken = takenSlots.includes(s);
+          return `<div class="slot-opt ${v.Saat===s?'active':''} ${taken?'disabled':''}" data-slot="${s}" ${taken?'data-disabled="1"':''}>${s}</div>`;
+        }).join('')}
       </div>
+      <div class="hint">Dolu (griye alınmış) saatlere ekleme yapamazsın.</div>
     </div>` : ''}
 
     <div class="field">
@@ -645,11 +681,33 @@ function wireFormEvents(container, opts){
   // slot select
   container.querySelectorAll('[data-slot]').forEach(el => {
     el.addEventListener('click', () => {
+      if(el.dataset.disabled === '1') return;
       container.querySelectorAll('[data-slot]').forEach(o => o.classList.remove('active'));
       el.classList.add('active');
       el.parentElement.dataset.value = el.dataset.slot;
     });
   });
+  // re-check which slots are taken whenever the date changes
+  const dateInput = container.querySelector('[data-f="Tarih"]');
+  const slotWrap = container.querySelector('[data-f="Saat"]');
+  if(dateInput && slotWrap){
+    dateInput.addEventListener('change', () => {
+      const taken = getTakenSlots(dateInput.value, opts.excludeId);
+      slotWrap.querySelectorAll('[data-slot]').forEach(el => {
+        const isTaken = taken.includes(el.dataset.slot);
+        el.classList.toggle('disabled', isTaken);
+        if(isTaken){
+          el.dataset.disabled = '1';
+          if(el.classList.contains('active')){
+            el.classList.remove('active');
+            slotWrap.dataset.value = '';
+          }
+        } else {
+          delete el.dataset.disabled;
+        }
+      });
+    });
+  }
   // person chip
   container.querySelectorAll('[data-person]').forEach(el => {
     el.addEventListener('click', () => {
@@ -682,10 +740,7 @@ function wireFormEvents(container, opts){
       try{
         await api('addGenre', {Tur: name});
         if(!state.genres.includes(name)) state.genres.push(name);
-        const opt = document.createElement('option');
-        opt.value = name; opt.textContent = name;
-        genreSelect.insertBefore(opt, genreSelect.querySelector('option[value="__add__"]'));
-        genreSelect.value = name;
+        rebuildGenreSelect(genreSelect, name);
         newGenreRow.style.display = 'none';
         input.value = '';
         showToast('Tür eklendi: ' + name);
@@ -786,13 +841,13 @@ function openDetail(id){
   if(!item) return;
   state.detailItem = item;
   const wrap = document.getElementById('detailFormWrap');
-  wrap.innerHTML = buildFormHtml({mode:'tv', values:item}) + `
+  wrap.innerHTML = buildFormHtml({mode:'tv', values:item, excludeId:item.ID}) + `
     <div class="form-actions">
       <button class="btn btn-danger" id="deleteDetailBtn">Sil</button>
       <button class="btn btn-primary" id="saveDetailBtn">Kaydet</button>
     </div>
   `;
-  wireFormEvents(wrap, {mode:'tv'});
+  wireFormEvents(wrap, {mode:'tv', excludeId:item.ID});
   document.getElementById('detailOverlay').classList.add('show');
 
   document.getElementById('saveDetailBtn').addEventListener('click', async () => {
@@ -904,34 +959,56 @@ function openMoveModal(id){
   if(!item) return;
   state.moveItem = item;
   const wrap = document.getElementById('moveFormWrap');
+  const initialDate = toDateStr(new Date());
+
+  function slotOptionsHtml(dateStr, selected){
+    const taken = getTakenSlots(dateStr, null);
+    return TIME_SLOTS.map(s => {
+      const isTaken = taken.includes(s);
+      return `<div class="slot-opt ${s===selected?'active':''} ${isTaken?'disabled':''}" data-slot="${s}" ${isTaken?'data-disabled="1"':''}>${s}</div>`;
+    }).join('');
+  }
+
+  let selectedSlot = '';
   wrap.innerHTML = `
     <div class="mini-picker">
       <div class="card-title" style="margin-bottom:12px;">${escapeHtml(item.Baslik)}</div>
       <div class="field">
         <label class="field-label">Tarih</label>
-        <input class="text-input" type="date" id="moveDate" value="${toDateStr(new Date())}">
+        <input class="text-input" type="date" id="moveDate" value="${initialDate}">
       </div>
       <div class="field" style="margin-bottom:0;">
         <label class="field-label">Saat Dilimi</label>
-        <div class="slot-select" id="moveSlotSelect">
-          ${TIME_SLOTS.map((s,i) => `<div class="slot-opt ${i===0?'active':''}" data-slot="${s}">${s}</div>`).join('')}
-        </div>
+        <div class="slot-select" id="moveSlotSelect">${slotOptionsHtml(initialDate, '')}</div>
+        <div class="hint">Dolu (griye alınmış) saatlere ekleme yapamazsın.</div>
       </div>
     </div>
     <button class="btn btn-primary" id="confirmMoveBtn">Takvime Yerleştir</button>
   `;
-  let selectedSlot = TIME_SLOTS[0];
-  wrap.querySelectorAll('[data-slot]').forEach(el => {
-    el.addEventListener('click', () => {
-      wrap.querySelectorAll('[data-slot]').forEach(o=>o.classList.remove('active'));
-      el.classList.add('active');
-      selectedSlot = el.dataset.slot;
+
+  function wireSlotClicks(){
+    wrap.querySelectorAll('[data-slot]').forEach(el => {
+      el.addEventListener('click', () => {
+        if(el.dataset.disabled === '1') return;
+        wrap.querySelectorAll('[data-slot]').forEach(o=>o.classList.remove('active'));
+        el.classList.add('active');
+        selectedSlot = el.dataset.slot;
+      });
     });
+  }
+  wireSlotClicks();
+
+  document.getElementById('moveDate').addEventListener('change', (e) => {
+    selectedSlot = '';
+    document.getElementById('moveSlotSelect').innerHTML = slotOptionsHtml(e.target.value, '');
+    wireSlotClicks();
   });
+
   document.getElementById('moveOverlay').classList.add('show');
   document.getElementById('confirmMoveBtn').addEventListener('click', async () => {
     const date = document.getElementById('moveDate').value;
     if(!date){ showToast('Tarih seç', true); return; }
+    if(!selectedSlot){ showToast('Saat dilimi seç', true); return; }
     const btn = document.getElementById('confirmMoveBtn');
     btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>';
     try{
@@ -958,12 +1035,58 @@ document.querySelectorAll('.toggle-opt').forEach(el => {
     document.querySelectorAll('.toggle-opt').forEach(o=>o.classList.remove('active'));
     el.classList.add('active');
     state.analyticsRange = el.dataset.range;
+    if(state.analyticsRange === 'week') state.analyticsWeekOffset = 0;
+    if(state.analyticsRange === 'month') state.analyticsMonthOffset = 0;
     renderAnalytics();
   });
 });
+document.getElementById('periodPrev').addEventListener('click', () => {
+  if(state.analyticsRange === 'week') state.analyticsWeekOffset -= 1;
+  if(state.analyticsRange === 'month') state.analyticsMonthOffset -= 1;
+  renderAnalytics();
+});
+document.getElementById('periodNext').addEventListener('click', () => {
+  if(state.analyticsRange === 'week') state.analyticsWeekOffset = Math.min(0, state.analyticsWeekOffset + 1);
+  if(state.analyticsRange === 'month') state.analyticsMonthOffset = Math.min(0, state.analyticsMonthOffset + 1);
+  renderAnalytics();
+});
+
+function getWeekRange(offset){
+  const now = new Date();
+  const start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  start.setDate(start.getDate() - start.getDay() + offset * 7);
+  const end = new Date(start); end.setDate(start.getDate() + 7);
+  return {start, end};
+}
+function getMonthRange(offset){
+  const now = new Date();
+  const start = new Date(now.getFullYear(), now.getMonth() + offset, 1);
+  const end = new Date(now.getFullYear(), now.getMonth() + offset + 1, 1);
+  return {start, end};
+}
+function renderPeriodNav(){
+  const nav = document.getElementById('periodNav');
+  const label = document.getElementById('periodLabel');
+  const nextBtn = document.getElementById('periodNext');
+  if(state.analyticsRange === 'all'){ nav.style.display = 'none'; return; }
+  nav.style.display = 'flex';
+  if(state.analyticsRange === 'week'){
+    const {start, end} = getWeekRange(state.analyticsWeekOffset);
+    const lastDay = new Date(end); lastDay.setDate(end.getDate() - 1);
+    const sameMonth = start.getMonth() === lastDay.getMonth();
+    const rangeTxt = sameMonth
+      ? `${start.getDate()}–${lastDay.getDate()} ${MONTHS_TR[start.getMonth()]}`
+      : `${start.getDate()} ${MONTHS_TR[start.getMonth()]} – ${lastDay.getDate()} ${MONTHS_TR[lastDay.getMonth()]}`;
+    label.textContent = rangeTxt + (state.analyticsWeekOffset === 0 ? ' · Bu Hafta' : '');
+    nextBtn.disabled = state.analyticsWeekOffset >= 0;
+  } else {
+    const {start} = getMonthRange(state.analyticsMonthOffset);
+    label.textContent = `${MONTHS_TR[start.getMonth()]} ${start.getFullYear()}` + (state.analyticsMonthOffset === 0 ? ' · Bu Ay' : '');
+    nextBtn.disabled = state.analyticsMonthOffset >= 0;
+  }
+}
 
 function itemsInRange(range){
-  const now = new Date();
   return state.tvGuide.filter(item => {
     const d = parseDateStr(item.Tarih);
     if(!d){
@@ -971,10 +1094,12 @@ function itemsInRange(range){
       return false;
     }
     if(range === 'all') return true;
-    if(range === 'month') return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
+    if(range === 'month'){
+      const {start, end} = getMonthRange(state.analyticsMonthOffset);
+      return d >= start && d < end;
+    }
     if(range === 'week'){
-      const start = new Date(now); start.setDate(now.getDate() - now.getDay()); start.setHours(0,0,0,0);
-      const end = new Date(start); end.setDate(start.getDate() + 7);
+      const {start, end} = getWeekRange(state.analyticsWeekOffset);
       return d >= start && d < end;
     }
     return true;
@@ -999,6 +1124,7 @@ function buildConicGradient(counts, colors){
 }
 
 function renderAnalytics(){
+  renderPeriodNav();
   const items = itemsInRange(state.analyticsRange);
   const withPerson = items.filter(i => i.Isteyen).length;
   const withGenre = items.filter(i => i.Tur).length;
@@ -1068,7 +1194,7 @@ function renderSettings(){
   if(!state.genres.length){
     container.innerHTML = `<div class="empty-state"><div class="ic">🏷️</div><div class="t">Henüz tür yok</div></div>`;
   } else {
-    container.innerHTML = state.genres.map(g => `
+    container.innerHTML = sortedGenres().map(g => `
       <div class="genre-row">
         <span class="gname">${escapeHtml(g)}</span>
         <button class="gdel" data-delgenre="${escapeHtml(g)}">✕</button>
@@ -1151,6 +1277,16 @@ function renderAll(){
     await loadAll();
   }
 })();
+
+/* ================= PWA: SERVICE WORKER ================= */
+if('serviceWorker' in navigator){
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('service-worker.js').catch(() => {
+      // Non-fatal — app still works as a normal web page if this fails
+      // (e.g. opened directly as a local file instead of via HTTPS hosting).
+    });
+  });
+}
 </script>
 </body>
 </html>

@@ -854,9 +854,15 @@ function openDetail(id){
       <button class="btn btn-danger" id="deleteDetailBtn">Sil</button>
       <button class="btn btn-primary" id="saveDetailBtn">Kaydet</button>
     </div>
+    <button class="btn btn-ghost" id="copyDetailBtn" style="width:100%; margin-top:10px;">📋 Başka Bir Güne Kopyala</button>
   `;
   wireFormEvents(wrap, {mode:'tv', excludeId:item.ID});
   document.getElementById('detailOverlay').classList.add('show');
+
+  document.getElementById('copyDetailBtn').addEventListener('click', () => {
+    closeOverlay('detailOverlay');
+    openCopyModal(item);
+  });
 
   document.getElementById('saveDetailBtn').addEventListener('click', async () => {
     const vals = readFormValues(wrap, 'tv');
@@ -962,11 +968,10 @@ function openWishlistAdd(){
   });
 }
 
-function openMoveModal(id){
-  const item = state.wishlist.find(w => w.ID === id);
-  if(!item) return;
-  state.moveItem = item;
+function openDateSlotPicker(opts){
+  // opts: {title, confirmLabel, subtitle, onConfirm(date, slot)}
   const wrap = document.getElementById('moveFormWrap');
+  document.getElementById('moveOverlay').querySelector('h2').textContent = opts.title;
   const initialDate = toDateStr(new Date());
 
   function slotOptionsHtml(dateStr, selected){
@@ -980,18 +985,18 @@ function openMoveModal(id){
   let selectedSlot = '';
   wrap.innerHTML = `
     <div class="mini-picker">
-      <div class="card-title" style="margin-bottom:12px;">${escapeHtml(item.Baslik)}</div>
+      ${opts.subtitle ? `<div class="card-title" style="margin-bottom:12px;">${escapeHtml(opts.subtitle)}</div>` : ''}
       <div class="field">
         <label class="field-label">Tarih</label>
-        <input class="text-input" type="date" id="moveDate" value="${initialDate}">
+        <input class="text-input" type="date" id="pickerDate" value="${initialDate}">
       </div>
       <div class="field" style="margin-bottom:0;">
         <label class="field-label">Saat Dilimi</label>
-        <div class="slot-select" id="moveSlotSelect">${slotOptionsHtml(initialDate, '')}</div>
+        <div class="slot-select" id="pickerSlotSelect">${slotOptionsHtml(initialDate, '')}</div>
         <div class="hint">Dolu (griye alınmış) saatlere ekleme yapamazsın.</div>
       </div>
     </div>
-    <button class="btn btn-primary" id="confirmMoveBtn">Takvime Yerleştir</button>
+    <button class="btn btn-primary" id="pickerConfirmBtn">${escapeHtml(opts.confirmLabel)}</button>
   `;
 
   function wireSlotClicks(){
@@ -1006,34 +1011,65 @@ function openMoveModal(id){
   }
   wireSlotClicks();
 
-  document.getElementById('moveDate').addEventListener('change', (e) => {
+  document.getElementById('pickerDate').addEventListener('change', (e) => {
     selectedSlot = '';
-    document.getElementById('moveSlotSelect').innerHTML = slotOptionsHtml(e.target.value, '');
+    document.getElementById('pickerSlotSelect').innerHTML = slotOptionsHtml(e.target.value, '');
     wireSlotClicks();
   });
 
   document.getElementById('moveOverlay').classList.add('show');
-  document.getElementById('confirmMoveBtn').addEventListener('click', async () => {
-    const date = document.getElementById('moveDate').value;
+  document.getElementById('pickerConfirmBtn').addEventListener('click', async () => {
+    const date = document.getElementById('pickerDate').value;
     if(!date){ showToast('Tarih seç', true); return; }
     if(!selectedSlot){ showToast('Saat dilimi seç', true); return; }
-    const btn = document.getElementById('confirmMoveBtn');
+    const btn = document.getElementById('pickerConfirmBtn');
     btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>';
     try{
-      const res = await api('moveToCalendar', {ID: item.ID, Tarih: date, Saat: selectedSlot});
+      await opts.onConfirm(date, selectedSlot);
+    }catch(err){
+      showToast('İşlem başarısız: ' + err.message, true);
+      btn.disabled = false; btn.textContent = opts.confirmLabel;
+    }
+  });
+}
+
+function openMoveModal(id){
+  const item = state.wishlist.find(w => w.ID === id);
+  if(!item) return;
+  openDateSlotPicker({
+    title: 'Takvime Taşı',
+    confirmLabel: 'Takvime Yerleştir',
+    subtitle: item.Baslik,
+    onConfirm: async (date, slot) => {
+      const res = await api('moveToCalendar', {ID: item.ID, Tarih: date, Saat: slot});
       state.wishlist = state.wishlist.filter(w => w.ID !== item.ID);
-      state.tvGuide.push({ID: res.id, Tarih: date, Saat: selectedSlot, Baslik: item.Baslik, Tur: item.Tur, Platform: item.Platform, Isteyen: item.Isteyen, Gorsel_Url: item.Gorsel_Url, Link: item.Link});
+      state.tvGuide.push({ID: res.id, Tarih: date, Saat: slot, Baslik: item.Baslik, Tur: item.Tur, Platform: item.Platform, Isteyen: item.Isteyen, Gorsel_Url: item.Gorsel_Url, Link: item.Link});
       showToast('Takvime taşındı ✓');
       closeOverlay('moveOverlay');
       state.currentDate = date;
       renderWishlist();
       renderDashboard();
-    }catch(err){
-      showToast('Taşınamadı: ' + err.message, true);
-      btn.disabled = false; btn.textContent = 'Takvime Yerleştir';
     }
   });
 }
+
+function openCopyModal(item){
+  openDateSlotPicker({
+    title: 'Başka Bir Güne Kopyala',
+    confirmLabel: 'Kopyala',
+    subtitle: item.Baslik,
+    onConfirm: async (date, slot) => {
+      const vals = {Tarih: date, Saat: slot, Baslik: item.Baslik, Tur: item.Tur, Platform: item.Platform, Isteyen: item.Isteyen, Gorsel_Url: item.Gorsel_Url, Link: item.Link};
+      const res = await api('addTV', vals);
+      state.tvGuide.push(Object.assign({ID: res.id}, vals));
+      showToast('Kopyalandı ✓');
+      closeOverlay('moveOverlay');
+      state.currentDate = date;
+      renderDashboard();
+    }
+  });
+}
+
 document.getElementById('moveClose').addEventListener('click', () => closeOverlay('moveOverlay'));
 document.getElementById('moveOverlay').addEventListener('click', e => { if(e.target.id === 'moveOverlay') closeOverlay('moveOverlay'); });
 
